@@ -189,7 +189,7 @@ def create_violin_plot(combined_df, images_path):
 create_violin_plot(combined_df, images_path)
 ```
 
-![Violin plot de SNR por ubicación](Study_images/violin_plotIET.png)
+![Violin plot de SNR por ubicación](Study_images/violin_plotIET_white.png)
 
 ---
 
@@ -217,7 +217,7 @@ def create_histogram(data_frames, images_path, translate_name):
 create_histogram(data_frames, images_path, translate_name)
 ```
 
-![Histograma SNR](Study_images/histogramIET.png)
+![Histograma SNR](Study_images/histogramIET_white.png)
 
 ---
 
@@ -246,7 +246,7 @@ def create_scatterplot(data_frames, images_path, translate_name):
 create_scatterplot(data_frames, images_path, translate_name)
 ```
 
-![Scatter SNR vs Tiempo](Study_images/scatterplotIET.png)
+![Scatter SNR vs Tiempo](Study_images/scatterplotIET_white.png)
 
 ---
 
@@ -369,7 +369,7 @@ La elección del par de pruebas (**Shapiro–Wilk** seguido de **Kruskal–Walli
 
 > Marusteri, M., & Bacarea, V. (2010). *Comparing groups for statistical differences: how to choose the right statistical test?* **Biochemia Medica**, 20(1), 15–32.
 
-![Árbol de decisión de Marusteri & Bacarea (2010)](Study_images/estudio.png)
+![Árbol de decisión de Marusteri & Bacarea (2010)](Study_images/estudio_white.png)
 
 > [!IMPORTANT]
 > **Camino que sigue este estudio:**
@@ -501,7 +501,7 @@ plt.savefig(os.path.join(images_path, 'kruskal_boxplot.pdf'), format='pdf', dpi=
 plt.show()
 ```
 
-![Boxplot Kruskal-Wallis](Study_images/kruskal_boxplot.png)
+![Boxplot Kruskal-Wallis](Study_images/kruskal_boxplot_white.png)
 
 > [!WARNING]
 > **Resultado obtenido:** $H \approx 1403.11$ (extremadamente alto frente al valor crítico $\chi^2_{8,\,0.05} \approx 15.51$) y $p \approx 1.20\times 10^{-297}$ → **se rechaza $H_0$ con altísima confianza**.

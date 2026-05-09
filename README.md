@@ -49,7 +49,7 @@ Los **9 archivos** se leen directamente desde la rama `main` del repositorio med
 
 Distribución de SNR por ubicación con boxplot interno y outliers (regla 1.5·IQR) marcados en rojo. Permite ver de un vistazo la **jerarquía** Antena Yagi → Pisos → Sótanos → RF–VLC y los regímenes de dispersión.
 
-![Violin plot de SNR por ubicación](Estudio_Estadistico/Study_images/violin_plotIET.png)
+![Violin plot de SNR por ubicación](Estudio_Estadistico/Study_images/violin_plotIET_white.png)
 
 ---
 
@@ -57,15 +57,15 @@ Distribución de SNR por ubicación con boxplot interno y outliers (regla 1.5·I
 
 Histograma con KDE para todas las ubicaciones superpuestas. Hace visible la **separación modal** entre escenarios y la asimetría de los sótanos.
 
-![Histograma SNR](Estudio_Estadistico/Study_images/histogramIET.png)
+![Histograma SNR](Estudio_Estadistico/Study_images/histogramIET_white.png)
 
 ---
 
 ## 4. Scatter SNR vs Tiempo
 
-Evolución temporal del SNR (índice sintético cada 0.1 s) por ubicación. Resalta la **inestabilidad temporal** del Sótano 1 frente a la planitud del Sótano 2 y RF–VLC.
+Evolución temporal del SNR por ubicación. Resalta la **inestabilidad temporal** del Sótano 1 frente a la planitud del Sótano 2 y RF–VLC.
 
-![Scatter SNR vs Tiempo](Estudio_Estadistico/Study_images/scatterplotIET.png)
+![Scatter SNR vs Tiempo](Estudio_Estadistico/Study_images/scatterplotIET_white.png)
 
 ---
 
@@ -139,7 +139,7 @@ La elección del par de pruebas (**Shapiro–Wilk** seguido de **Kruskal–Walli
 
 > Marusteri, M., & Bacarea, V. (2010). *Comparing groups for statistical differences: how to choose the right statistical test?* **Biochemia Medica**, 20(1), 15–32.
 
-![Árbol de decisión de Marusteri & Bacarea (2010)](Estudio_Estadistico/Study_images/estudio.png)
+![Árbol de decisión de Marusteri & Bacarea (2010)](Estudio_Estadistico/Study_images/estudio_white.png)
 
 > [!IMPORTANT]
 > **Camino que sigue este estudio:**
@@ -192,7 +192,7 @@ Esto es coherente con varias señales observadas:
 
 Kruskal–Wallis es la **alternativa no paramétrica al ANOVA de una vía**. Asigna *rangos* a todas las observaciones combinadas y mide la diferencia entre la suma de rangos por grupo y lo esperado bajo $H_0$. Bajo $H_0$, $H$ se distribuye aproximadamente como $\chi^2_{k-1}$ (con $k - 1 = 8$ grados de libertad).
 
-![Boxplot Kruskal-Wallis](Estudio_Estadistico/Study_images/kruskal_boxplot.png)
+![Boxplot Kruskal-Wallis](Estudio_Estadistico/Study_images/kruskal_boxplot_white.png)
 
 > [!WARNING]
 > **Resultado obtenido:** $H \approx 1403.11$ (extremadamente alto frente al valor crítico $\chi^2_{8,\,0.05} \approx 15.51$) y $p \approx 1.20\times 10^{-297}$ → **se rechaza $H_0$ con altísima confianza**.
