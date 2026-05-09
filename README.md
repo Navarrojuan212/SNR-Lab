@@ -1,286 +1,234 @@
 # SNR-Lab
-For scientific purpose
----
 
-# Detalles Estadísticos — Glosario, justificación metodológica y caracterización de escenarios
+> Estudio estadístico de la degradación SNR en una edificación universitaria del **ITM, Campus Fraternidad (Medellín)** y validación de un banco RF–VLC. Caracteriza el SNR a 103.5 MHz en **9 escenarios** (Antena Yagi outdoor, Pisos 1–5, Sótanos 1–2 y banco RF–VLC) y respalda estadísticamente la **Tabla 4.1** del manuscrito de tesis.
 
-> Documento de trabajo que consolida (a) la interpretación de cada columna de la Tabla 4.1 del manuscrito, (b) la justificación de la cadena estadística empleada con base en el árbol de decisión de Marusteri & Bacarea (2010), (c) la justificación del escalado robusto previo a las pruebas estadísticas y a los métodos de reducción de dimensión, y (d) la descripción física de cada escenario de medición. Sirve como insumo para alimentar Cap. 3 (escenarios), Cap. 4 (discusión) y el Anexo de métodos estadísticos del manuscrito en Overleaf.
+## Estructura del repositorio
 
----
+| Recurso | Para qué sirve |
+|---|---|
+| [Data/](Data/) | Archivos `.xlsx` y `.csv` con las 200 muestras de SNR por escenario (9 archivos). |
+| [Estudio_Estadistico/](Estudio_Estadistico/) | Notebook reproducible + README con los **bloques de código** listos para Jupyter/Colab. |
+| [Estudio_Estadistico/Study_images/](Estudio_Estadistico/Study_images/) | Figuras (PNG/PDF a 600 dpi) y `statistics.csv` generados por el notebook. |
+| [DetallesEstadisticos.md](DetallesEstadisticos.md) | Documento de trabajo con justificación metodológica extensa, caracterización física por escenario y propuesta de migración al manuscrito. |
 
-## A. A qué evaluador(es) responde
-
-| Evaluador | Punto | Qué pidió | Cómo lo cubre este documento |
-|---|---|---|---|
-| **E3** | #4 | "no se hizo descripción suficiente para determinar los escenarios indoor… condiciones de alcance y **movilidad del usuario**" | Caracterización por escenario (Bloque 4) + narrativa de tráfico humano en Sótano 1 (Bloque 5) |
-| **E3** | #4 | "anexo que explique los **dos métodos** [estadísticos] utilizados" | Glosario (Bloque 1) + justificación de cadena Shapiro–Wilk → Kruskal–Wallis con árbol de decisión (Bloque 2) |
-| **E3** | #5 | "no se explica el entorno y escenarios… no hay contundencia en la discusión" | Narrativa que conecta varianza observada con condiciones del entorno (Bloque 5) |
-| **E1** | #4 | "condiciones de adquisición, comparabilidad entre escenarios" | Tabla de escenarios con condiciones físicas (Bloque 4) |
-| **E2** | #2 | "variables controladas… formato de base de datos" | Documenta cada fila = ubicación; cada columna = estadístico (Bloque 1) |
-
-Cruza con **Tema 2** (Cálculo SNR + análisis estadístico) y **Tema 7** (Descripción de escenarios) del documento [RespuestaSIRVENalos3Evaluadores.md](RespuestaSIRVENalos3Evaluadores.md).
+> [!TIP]
+> Este README es una **lectura narrativa** del estudio — explica resultados, decisiones y figuras sin código. Para **reproducir el análisis paso a paso** (con los bloques Python listos para pegar en Jupyter/Colab), ver [Estudio_Estadistico/README.md](Estudio_Estadistico/README.md) o abrir directamente [Estudio_Estadistico/SNRDegradationStudy.ipynb](Estudio_Estadistico/SNRDegradationStudy.ipynb).
 
 ---
 
-## Bloque 1 — Glosario de columnas de la Tabla 4.1
+## Alcance del estudio
 
-Cada fila de la tabla corresponde a una **ubicación de medición** (`Lugar`). Las columnas reportan estadísticos descriptivos del SNR (en dB) calculados sobre las **N = 200** muestras adquiridas en ese punto.
+- Caracterización del SNR a 103.5 MHz (banda FM comercial) en **9 escenarios** del edificio del ITM-Fraternidad.
+- Visualizaciones (violín, histograma, scatter temporal) y **tabla de estadísticas descriptivas** con glosario didáctico.
+- Análisis inferencial: prueba de **normalidad (Shapiro–Wilk)** y prueba de **comparación entre grupos (Kruskal–Wallis)**, con interpretación de hipótesis nulas.
+- Justificación bibliográfica de la cadena estadística mediante el árbol de decisión de **Marusteri & Bacarea (2010)**.
 
-> **Notación alineada con el manuscrito (Tabla 4.1):** se usan $\bar{x}$ (media muestral), $\tilde{x}$ (mediana), $\hat{x}$ (moda), $\sigma$ (desviación estándar muestral) y $\sigma^2$ (varianza muestral). El orden de columnas reproduce el del manuscrito.
+> [!IMPORTANT]
+> Los 9 escenarios reportados son **Antena Yagi (Piso 4 outdoor)**, **Pisos 1–5**, **Sótanos 1 y 2**, y banco **RF–VLC**. La antena Yagi se ubica en la zona al aire libre del Piso 4 (no en la terraza del 6º piso), elegida deliberadamente porque está justo encima de los sótanos, lo que permite tender un cable vertical hasta Sótano 2 emulando un trayecto outdoor → indoor profundo.
+
+---
+
+## 1. Datos del estudio
+
+Los **9 archivos** se leen directamente desde la rama `main` del repositorio mediante URLs `raw`, por lo que el notebook funciona en Colab sin clonar nada. Cada escenario aporta **200 filas** (≈ 22 s de adquisición continua a 0.1 s por muestra), totalizando **1.800 muestras** de SNR.
+
+| Archivo | Escenario |
+|---|---|
+| `Piso1_103_5MHz_SNR.xlsx` … `Piso5_103_5MHz_SNR.xlsx` | Pisos 1 a 5 (indoor, receptor estático en el punto óptimo de cada nivel) |
+| `AntennaOutdoor_103_5MHz_SNR.xlsx` | Antena Yagi outdoor (Piso 4, al aire libre) — línea base |
+| `RF-VLC_SNR.xlsx` | Banco RF–VLC (laboratorio, condiciones controladas) |
+| `Sotano1_103_5MHz_SNR_B.csv` | Sótano 1 (–1) — enfermería + ludoteca |
+| `Sotano2_103_5MHz_SNR_E.csv` | Sótano 2 (–2) — laboratorios |
+
+> [!NOTE]
+> El receptor de cada sesión es un **AIRSPY**. En cada nivel se hizo un barrido manual previo y, una vez identificado el punto de mejor SNR, el receptor se **fijó** durante la adquisición — la comparación entre niveles es por tanto conservadora (cada piso se compara contra su mejor recepción).
+
+---
+
+## 2. Violin Plot por ubicación
+
+Distribución de SNR por ubicación con boxplot interno y outliers (regla 1.5·IQR) marcados en rojo. Permite ver de un vistazo la **jerarquía** Antena Yagi → Pisos → Sótanos → RF–VLC y los regímenes de dispersión.
+
+![Violin plot de SNR por ubicación](Estudio_Estadistico/Study_images/violin_plotIET.png)
+
+---
+
+## 3. Histograma SNR
+
+Histograma con KDE para todas las ubicaciones superpuestas. Hace visible la **separación modal** entre escenarios y la asimetría de los sótanos.
+
+![Histograma SNR](Estudio_Estadistico/Study_images/histogramIET.png)
+
+---
+
+## 4. Scatter SNR vs Tiempo
+
+Evolución temporal del SNR (índice sintético cada 0.1 s) por ubicación. Resalta la **inestabilidad temporal** del Sótano 1 frente a la planitud del Sótano 2 y RF–VLC.
+
+![Scatter SNR vs Tiempo](Estudio_Estadistico/Study_images/scatterplotIET.png)
+
+---
+
+## 5. Estadísticas descriptivas por ubicación
+
+Para cada uno de los 9 escenarios se calculan estadísticos descriptivos del SNR. Los descriptores se agrupan en dos familias:
+
+- **Tendencia central** (¿dónde "viven" los datos?): media $\bar{x}$, mediana $\tilde{x}$, moda $\hat{x}$.
+- **Dispersión** (¿qué tan estables son?): cuartiles $Q_1, Q_3$, IQR, varianza $\sigma^2$, desviación estándar $\sigma$, fronteras de outliers.
+
+> [!TIP]
+> Cuando $\bar{x} \neq \tilde{x}$, la distribución es **asimétrica**: la mediana es más informativa porque es robusta a outliers; la media se desplaza hacia la cola larga.
+
+### Tabla 4.1 — Estadísticos por ubicación
+
+| Place    |  Q1 (dB) | Mean (dB) |  Q3 (dB) | IQR (dB) | ↓ Outlier | ↑ Outlier | Std Dev | Median | Mode  | Variance |
+|----------|---------:|----------:|---------:|---------:|----------:|----------:|--------:|-------:|------:|---------:|
+| Piso 1   | 24.0575  | 25.0679   | 26.0500  | 1.9925   | 22.0792   | 28.0567   | 1.5609  | 24.980 | 25.45 |  2.4363  |
+| Piso 2   | 19.6975  | 20.3366   | 21.0025  | 1.3050   | 18.3791   | 22.2941   | 0.9264  | 20.280 | 20.17 |  0.8582  |
+| Piso 3   | 19.1375  | 20.2047   | 21.6775  | 2.5400   | 16.3947   | 24.0147   | 1.8457  | 19.565 | 19.21 |  3.4065  |
+| Piso 4   | 21.0275  | 21.9264   | 22.6325  | 1.6050   | 19.5189   | 24.3339   | 1.5346  | 21.920 | 21.15 |  2.3550  |
+| Piso 5   | 24.5550  | 25.7522   | 26.6800  | 2.1250   | 22.5647   | 28.9397   | 1.7582  | 25.725 | 25.17 |  3.0911  |
+| Antena   | 28.6200  | 29.1438   | 29.7100  | 1.0900   | 27.5088   | 30.7788   | 0.6719  | 28.980 | 28.62 |  0.4515  |
+| RF - VLC | 36.6200  | 36.8974   | 37.1500  | 0.5300   | 36.1024   | 37.6924   | 0.4790  | 36.810 | 36.62 |  0.2294  |
+| Sótano 1 |  7.8750  | 11.5005   | 11.8150  | 3.9400   |  5.5905   | 17.4105   | 5.8970  |  8.565 |  8.26 | 34.7745  |
+| Sótano 2 |  4.6100  |  4.9260   |  5.1800  | 0.5700   |  4.0710   |  5.7810   | 0.3421  |  4.935 |  4.57 |  0.1170  |
+
+### Glosario de columnas
 
 | Columna | Símbolo | Definición | Cómo interpretarla |
 |---|---|---|---|
-| **Lugar** | — | Ubicación física donde se tomó la medida. | Identificador del escenario (Antena, Piso 1–5, Sótano 1–2, RF–VLC). |
-| **$Q_1$** | $Q_1$ | Primer cuartil (percentil 25) en dB. | El 25 % de las muestras quedan por debajo de este valor. Marca el límite inferior de la caja del boxplot. |
-| **$\bar{x}$** | $\bar{x}$ | Media muestral en dB. | Valor "promedio" del SNR. Sensible a outliers; no representa bien distribuciones asimétricas. |
-| **$Q_3$** | $Q_3$ | Tercer cuartil (percentil 75) en dB. | El 75 % de las muestras quedan por debajo. Límite superior de la caja del boxplot. |
-| **IQR** | $\text{IQR}=Q_3-Q_1$ | Rango intercuartílico en dB. | **Medida robusta de dispersión**: cuán "ancha" es la mitad central de los datos. IQR alto ⇒ alta variabilidad del enlace. |
-| **↓ Atípico** | $\bar{x}-1.5\cdot\text{IQR}$ | Frontera inferior para considerar un valor atípico (en dB). | Cualquier muestra por debajo es candidata a outlier. *Variante de Tukey adoptada en este estudio: usa la media en lugar de $Q_1$.* |
-| **↑ Atípico** | $\bar{x}+1.5\cdot\text{IQR}$ | Frontera superior para outliers (en dB). | Cualquier muestra por encima es candidata a outlier (misma variante). |
-| **$\tilde{x}$** | $\tilde{x}$ | Mediana muestral en dB (percentil 50). | Valor central robusto. Si $\tilde{x}\ne\bar{x}$ la distribución es asimétrica. **Mejor descriptor central que la media** cuando hay outliers (caso de este estudio). |
-| **$\hat{x}$** | $\hat{x}$ | Moda muestral en dB. | Valor de SNR más frecuente. Útil con datos discretizados; en muestras continuas conviene mirarla junto al histograma. |
-| **$\sigma^2$** | $\sigma^2$ | Varianza muestral en dB². | **Termómetro de inestabilidad** del canal: mayor varianza ⇒ canal más perturbado. |
-| **$\sigma$** | $\sigma$ | Desviación estándar muestral en dB. | Dispersión "promedio" alrededor de la media (raíz de la varianza). En dB indica cuán estable es el enlace. |
+| `Place` | **Lugar** | Ubicación física donde se tomó la medida | Identificador del escenario |
+| `Q1 {dB}` | $Q_1$ | Primer cuartil (percentil 25) en dB | El 25 % de las muestras quedan por debajo. Marca el límite inferior de la caja del boxplot |
+| `Mean {dB}` | $\bar{x}$ | Media muestral en dB | Valor "promedio" del SNR. **Sensible a outliers** |
+| `Q3 {dB}` | $Q_3$ | Tercer cuartil (percentil 75) en dB | El 75 % de las muestras quedan por debajo |
+| `IQR {dB}` | IQR $= Q_3 - Q_1$ | Rango intercuartílico en dB | **Medida robusta de dispersión**: cuán "ancha" es la mitad central de los datos |
+| `Lower Outlier {dB}` | ↓ Atípico | $\bar{x} - 1.5\cdot\text{IQR}$ — frontera inferior | Cualquier muestra por debajo es candidata a outlier (variante de Tukey usada aquí) |
+| `Upper Outlier {dB}` | ↑ Atípico | $\bar{x} + 1.5\cdot\text{IQR}$ — frontera superior | Cualquier muestra por encima es candidata a outlier |
+| `Std Dev {dB}` | $\sigma$ | Desviación estándar muestral en dB | Dispersión "promedio" alrededor de la media. Mayor $\sigma$ ⇒ canal más inestable |
+| `Median {dB}` | $\tilde{x}$ | Mediana muestral (percentil 50) en dB | Valor central robusto. **Mejor descriptor que la media** cuando hay outliers |
+| `Mode {dB}` | $\hat{x}$ | Moda muestral en dB | Valor de SNR más frecuente |
+| `Variance {dB}` | $\sigma^2$ | Varianza muestral en dB$^2$ | Cuadrado de $\sigma$. **Termómetro de inestabilidad** del canal |
 
-> **Nota sobre la fórmula de outliers:** la regla canónica de Tukey utiliza $Q_1-1.5\cdot\text{IQR}$ y $Q_3+1.5\cdot\text{IQR}$. En este estudio se adoptó la variante $\bar{x}\pm 1.5\cdot\text{IQR}$ (centrada en la media) por razones operativas. La diferencia es marginal cuando $\bar{x}\approx \tilde{x}$ (distribuciones casi simétricas) y se documenta explícitamente para que el lector pueda replicar los cálculos.
-
-### Valores de la Tabla 4.1 (espejo del manuscrito)
-
-> Réplica markdown de los valores actualmente en [`chapter4.tex`](Tesis-V4-overleaf/Tesis-ITM/chapter4.tex) (`tab:datos-estadisticos`). Sirve para verificación cruzada contra el manuscrito y contra los datos brutos en [`SNR Degradation Study/Data/`](../SNR%20Degradation%20Study/Data/). Los marcadores `↓` y `↑` que acompañan a las celdas $\bar{x}$ de Sótano 2 y RF–VLC señalan que esos escenarios son los extremos absolutos del estudio (mínimo y máximo, respectivamente).
-
-| Lugar | $Q_1$ | $\bar{x}$ | $Q_3$ | IQR | ↓ Atípico | ↑ Atípico | $\tilde{x}$ | $\hat{x}$ | $\sigma^2$ | $\sigma$ |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Piso 1   | 24.06 | 25.07     | 26.05 | 1.99 | 22.08 | 28.06 | 24.98 | 25.45 | 2.44  | 1.56 |
-| Piso 2   | 19.70 | 20.34     | 21.00 | 1.30 | 18.38 | 22.29 | 20.28 | 20.17 | 0.86  | 0.93 |
-| Piso 3   | 19.14 | 20.20     | 21.68 | 2.54 | 16.39 | 24.01 | 19.57 | 19.21 | 3.41  | 1.85 |
-| Piso 4   | 21.03 | 21.93     | 22.63 | 1.60 | 19.52 | 24.33 | 21.92 | 21.15 | 2.35  | 1.53 |
-| Piso 5   | 24.56 | 25.75     | 26.68 | 2.12 | 22.56 | 28.94 | 25.72 | 25.15 | 3.09  | 1.76 |
-| Antena   | 28.62 | 29.14     | 29.71 | 1.09 | 27.51 | 30.78 | 28.98 | 28.62 | 0.45  | 0.67 |
-| RF–VLC   | 36.62 | ↑ 36.90   | 37.15 | 0.53 | 36.10 | 37.69 | 36.81 | 36.62 | 0.23  | 0.48 |
-| Sótano 1 |  7.88 | 11.50     | 11.82 | 3.94 |  5.60 | 17.41 |  8.56 |  8.26 | 34.77 | 5.90 |
-| Sótano 2 |  4.61 | ↓ 4.93    |  5.18 | 0.57 |  4.07 |  5.78 |  4.93 |  4.57 | 0.12  | 0.34 |
-
-> **Nota de verificación (2026-04-28):** los valores $Q_1$ y $\hat{x}$ de la fila RF–VLC (ambos `36.62`) corresponden a la corrección aplicada en su día sobre la versión PDF original, donde aparecían erróneamente como `36.02` (que es el **mínimo** de la serie, no el primer cuartil ni la moda). El resto de celdas se verificó contra los datos brutos de [`SNR Degradation Study/Data/`](../SNR%20Degradation%20Study/Data/) con el script [`_verify_stats.py`](_verify_stats.py); todas coinciden con `RF-VLC_SNR.xlsx` y los demás `.xlsx`/`.csv` por escenario. Esta tabla reproduce los mismos valores numéricos del manuscrito (`chapter4.tex`, `tab:datos-estadisticos`); aquí se presentan con dos cifras decimales uniformes para facilitar la lectura en markdown.
+> [!WARNING]
+> **Nota sobre la fórmula de outliers:** la regla canónica de Tukey utiliza $Q_1-1.5\cdot\text{IQR}$ y $Q_3+1.5\cdot\text{IQR}$. En este estudio se adoptó la variante centrada en la media ($\bar{x}\pm 1.5\cdot\text{IQR}$). La diferencia es marginal cuando $\bar{x}\approx \tilde{x}$ y se documenta explícitamente para que el lector pueda replicar los cálculos.
 
 ---
 
-## Bloque 2 — Justificación de la cadena estadística (Shapiro–Wilk → Kruskal–Wallis)
+## 6. Análisis inferencial — Pruebas estadísticas
 
-> **Referencia metodológica:** Marusteri, M., & Bacarea, V. (2010). *Comparing groups for statistical differences: how to choose the right statistical test?* Biochemia Medica, 20(1), 15–32. El árbol de decisión de la Figura 4 de este artículo guía la elección del test correcto en función del número de muestras, normalidad y emparejamiento. Archivo local: [Marusteri_M_Comparing_groups_for_statistical_differences.pdf](Marusteri_M_Comparing_groups_for_statistical_differences.pdf).
+La estadística **descriptiva** anterior nos dice cómo se ven los datos. La estadística **inferencial** responde dos preguntas formales:
 
-### Camino de decisión seguido en este estudio
+1. **¿Los datos siguen una distribución normal (gaussiana)?** → Determina qué familia de pruebas podemos usar (paramétrica vs. no paramétrica). Lo abordamos con la prueba de **Shapiro–Wilk**.
+2. **¿Hay diferencias significativas entre las ubicaciones, o el SNR es estadísticamente "el mismo" en todas?** → Lo abordamos con la prueba de **Kruskal–Wallis**.
+
+### Hipótesis nula ($H_0$) y nivel de significancia
+
+| Comparación | Decisión | Lectura |
+|---|---|---|
+| $p > \alpha$ | **No se rechaza $H_0$** | Los datos son compatibles con $H_0$. *No "se demuestra"* $H_0$ — solo no hay evidencia suficiente para descartarla |
+| $p \le \alpha$ | **Se rechaza $H_0$** | Los datos son **incompatibles** con $H_0$ a nivel $\alpha$. Se acepta $H_1$ |
+
+En este estudio usamos el nivel de significancia estándar **$\alpha = 0.05$** (5 % de probabilidad de "falso positivo").
+
+> [!CAUTION]
+> Un p-value pequeño *no* mide "qué tan grande" es el efecto, solo qué tan inverosímil es $H_0$. Por eso, además del p-value, reportamos los descriptores cuantitativos de la Tabla 4.1.
+
+### Justificación bibliográfica: árbol de decisión de Marusteri & Bacarea (2010)
+
+La elección del par de pruebas (**Shapiro–Wilk** seguido de **Kruskal–Wallis**) no es arbitraria: sigue el árbol de decisión de:
+
+> Marusteri, M., & Bacarea, V. (2010). *Comparing groups for statistical differences: how to choose the right statistical test?* **Biochemia Medica**, 20(1), 15–32.
 
 ![Árbol de decisión de Marusteri & Bacarea (2010)](Estudio_Estadistico/Study_images/estudio.png)
 
-### Paso 1 — Selección de la rama "Three or more sample"
+> [!IMPORTANT]
+> **Camino que sigue este estudio:**
+> 1. **k = 9 ubicaciones independientes** → entrar por la rama "tres o más muestras".
+> 2. **Shapiro–Wilk rechaza la normalidad** ($p \ll 0.05$) → bajar por la rama "no normal".
+> 3. **Las muestras no son pareadas** (cada ubicación es un punto espacial distinto, sin correspondencia uno-a-uno entre observaciones de grupos diferentes) → el test correcto es **Kruskal–Wallis**.
 
-El estudio compara **9 ubicaciones independientes**: Antena, Piso 1, Piso 2, Piso 3, Piso 4, Piso 5, Sótano 1, Sótano 2 y el banco RF–VLC. Como $k=9>2$, se ingresa por la rama "Three or more sample" del árbol de decisión.
+### Escalado robusto previo: `RobustScaler`
 
-### Paso 2 — Prueba de normalidad: Shapiro–Wilk
-
-**Hipótesis:**
-- $H_0$: la SNR proviene de una distribución normal.
-- $H_1$: la SNR no proviene de una distribución normal.
-
-**Resultado obtenido:**
-
-| Estadístico W | p-value | Decisión ($\alpha=0.05$) |
-|---|---|---|
-| 0.928 | $\approx 0$ (p ≪ 0.05) | **Se rechaza $H_0$** |
-
-**Interpretación.** La SNR agregada **no sigue una distribución gaussiana**, lo que descarta el uso de pruebas paramétricas (ANOVA, t-test). Esto es coherente con la presencia de outliers documentados en las columnas ↓/↑ Atípico de la Tabla 4.1 y con la asimetría observada entre $\bar{x}$ y $\tilde{x}$ en varias ubicaciones (notablemente Sótano 1: $\bar{x}=11.5$ vs. $\tilde{x}=8.56$).
-
-### Paso 3 — Verificación de no emparejamiento
-
-Las muestras **no son pareadas** porque cada ubicación corresponde a un punto espacial distinto, sin correspondencia uno-a-uno entre observaciones de grupos diferentes. No existe el supuesto de "el mismo sujeto medido en dos condiciones" que justificaría una prueba pareada (Friedman, repeated measures ANOVA).
-
-### Paso 4 — Selección de Kruskal–Wallis
-
-Combinando **k ≥ 3**, **no normalidad** y **no pareamiento**, el árbol de Marusteri & Bacarea conduce inequívocamente al **test de Kruskal–Wallis** — la alternativa no paramétrica al ANOVA de una vía, que compara medianas de $k$ grupos independientes.
-
-**Hipótesis:**
-- $H_0$: las medianas de SNR de las 9 ubicaciones son iguales.
-- $H_1$: al menos una mediana difiere.
-
-**Resultado obtenido:**
-
-| Estadístico H | p-value | Decisión ($\alpha=0.05$) |
-|---|---|---|
-| 1403.11 | $1.20\times 10^{-297}$ | **Se rechaza $H_0$** |
-
-**Interpretación.** Existen **diferencias estadísticamente significativas** entre al menos dos ubicaciones. El valor de $H$ extremadamente alto y un p-value prácticamente nulo confirman que el escenario de medición tiene un efecto medible sobre la SNR — **validación cuantitativa** de que la degradación reportada no es ruido aleatorio.
-
-### Resumen para el manuscrito
-
-> *"La selección de la prueba estadística siguió el árbol de decisión de Marusteri & Bacarea (2010, Fig. 4). Como (i) se comparan $k=9>2$ grupos independientes, (ii) la prueba de Shapiro–Wilk rechaza la hipótesis de normalidad sobre la SNR ($W=0.928$, $p\ll 0.05$) y (iii) las muestras no son pareadas (cada ubicación es un punto espacial distinto), la prueba apropiada es **Kruskal–Wallis**, alternativa no paramétrica al ANOVA de una vía. El test arrojó $H=1403.11$ y $p=1.20\times 10^{-297}$, rechazando la hipótesis de igualdad de medianas y confirmando que la ubicación tiene un efecto significativo sobre la SNR."*
-
----
-
-## Bloque 3 — Justificación del escalado robusto (`RobustScaler`)
-
-Antes de aplicar Shapiro–Wilk y Kruskal–Wallis, así como los métodos de reducción de dimensión (PCA, LDA, t-SNE), se realiza un escalado de las columnas `SNR` y `Time_Index` mediante `RobustScaler` (de `sklearn.preprocessing`).
-
-### ¿Qué es `RobustScaler`?
-
-Aplica la transformación:
+Antes de aplicar Shapiro–Wilk, las features `SNR` y `Time_Index` se escalan con `RobustScaler` (de `sklearn.preprocessing`), que centra los datos en la **mediana** y los escala por el **rango intercuartílico**:
 
 $$x'_i = \frac{x_i - \tilde{x}}{\text{IQR}}$$
 
-es decir, centra los datos en la **mediana** y los escala por el **rango intercuartílico**, en lugar de usar la media y la desviación estándar (como `StandardScaler`) o el mínimo/máximo (como `MinMaxScaler`).
-
-### Comparación de scalers para este caso
-
-| Scaler | Centrado | Escala | Sensibilidad a outliers | Apto para SNR de este estudio |
-|---|---|---|---|---|
-| `StandardScaler` | $\bar{x}$ | $\sigma$ | **Alta** (media y desv. estándar son sensibles) | ❌ Sesgado por outliers (Sótano 1 tiene $\sigma=5.9$ dB) |
-| `MinMaxScaler` | $x_{\min}$ | $x_{\max}-x_{\min}$ | **Muy alta** (un solo valor extremo deforma toda la escala) | ❌ Aún más sensible |
-| **`RobustScaler`** | $\tilde{x}$ | $\text{IQR}$ | **Baja** (mediana e IQR son estadísticos robustos) | ✅ **Adecuado** |
-
-### Por qué `RobustScaler` es la opción correcta aquí
-
-Tres razones, todas verificables en los propios datos del estudio:
-
-1. **Los datos no son normales** (Shapiro–Wilk lo rechaza con $p\ll 0.05$). El uso de $\bar{x}$ y $\sigma$ —estadísticos óptimos para distribuciones gaussianas— produciría un centrado y una escala distorsionados.
-2. **Existen outliers documentados** en cada ubicación (columnas ↓/↑ Atípico de la Tabla 4.1). En particular, Sótano 1 tiene $\sigma^2=34.77$ dB², casi **290 veces** la varianza del Sótano 2 (0.12 dB²). Un `StandardScaler` ajustado a estos datos quedaría dominado por la dispersión de Sótano 1 y comprimiría los demás escenarios.
-3. **Las escalas de las dos features son disímiles:** SNR ∈ [4, 38] dB y `Time_Index` ∈ [0, 20] s. Sin escalado, PCA/t-SNE asignarían pesos arbitrarios; con `RobustScaler` ambas features quedan en rangos comparables sin que los outliers de SNR contaminen el escalado de `Time_Index`.
-
-### Resumen para el manuscrito
-
-> *"Previo a las pruebas estadísticas y a la reducción de dimensión, las features `SNR` y `Time_Index` se escalaron con `RobustScaler` (Pedregosa et al., 2011), que centra los datos en la mediana y los normaliza por el IQR. Esta elección obedece a tres razones: (i) la no normalidad de la SNR confirmada por Shapiro–Wilk descarta el uso de estadísticos basados en media/desviación estándar; (ii) la presencia de outliers severos en escenarios de alta movilidad humana —notablemente Sótano 1, con $\sigma^2=34.77$ dB$^2$— dominaría un escalado tipo `StandardScaler`; (iii) la disparidad de unidades entre SNR (dB) y tiempo (s) requiere normalización para que los métodos de reducción de dimensión (PCA, LDA, t-SNE) no asignen pesos espurios a una de las dos."*
-
----
-
-## Bloque 4 — Caracterización física de cada escenario
-
-### Marco general
-
-Las medidas se realizaron en una **edificación universitaria** del **ITM, Campus Fraternidad (Medellín)** de 6 pisos + 2 sótanos: el 6º piso corresponde a la **terraza propiamente dicha** (no se utiliza en este estudio); el estudio se concentra en los **5 pisos habitables** (Pisos 1–5) y los **2 sótanos** (–1 y –2). El receptor de cada sesión es un **AIRSPY** que adquiere **N = 200 muestras** por escenario con separación temporal de 0.1 s (≈ 22 s de adquisición continua).
-
-### Captura de la señal de referencia (antena Yagi)
-
-La **señal de referencia** a 103.5 MHz (banda FM comercial) se captura mediante una **antena Yagi outdoor al aire libre ubicada en el Piso 4**, no en la terraza del 6º piso. La elección del Piso 4 obedece a una razón estructural concreta:
-
-> **El Piso 4 dispone de una zona al aire libre que queda físicamente justo encima de los sótanos.** Esto permite **tender un cable** desde la salida de la Yagi outdoor hasta el **Sótano 2 (–2)**, sin recurrir a multi-saltos ni a re-radiadores intermedios.
-
-Esta arquitectura es **deliberada** y forma parte del diseño experimental: emula un **escenario hostil outdoor → indoor profundo** en el que la señal se capta en aire libre y luego se transporta físicamente hasta el punto más degradado del edificio. La antena Yagi actúa, por tanto, simultáneamente como (i) **línea base outdoor** del estudio estadístico y (ii) **fuente de entrada del sistema híbrido propuesto**, que la procesa antes de redistribuirla.
-
-### Protocolo de movilidad del receptor
-
-> **Receptor estático en el "punto óptimo" de cada nivel.** En cada piso/sótano se realizó un barrido manual previo y, una vez identificado el punto donde la señal se capta con mejor calidad (mejor SNR observada), el receptor se **fijó en ese punto** durante los ≈ 22 s de adquisición. No se trata, por tanto, de una caracterización aleatoria del piso, sino de la **mejor SNR alcanzable** en ese nivel — lo cual hace la comparación entre niveles más conservadora (los pisos más bajos / sótanos no están penalizados por una mala selección de punto).
-
-### Cronograma de adquisición (sesiones)
-
-Las medidas se realizaron en **cuatro sesiones distintas** entre marzo y octubre de 2024. Las fechas se extrajeron directamente de la columna `Timestamp` de los archivos `.xlsx`/`.csv` originales:
-
-| Sesión | Fecha | Hora local | Día semana | Escenarios cubiertos |
-|---|---|---|---|---|
-| 1 | **2024-03-22** | 15:47 – 16:09 | viernes (PM) | Pisos 1–5 (en este orden temporal: P4 → P3 → P2 → P1 → P5) |
-| 2 | **2024-04-05** | 11:28 – 11:36 | **viernes (AM, hora pico de clases)** | Sótano 1 (11:28) → Sótano 2 (11:36) |
-| 3 | 2024-10-08 | 11:36 | martes | Antena Yagi outdoor (Piso 4) |
-| 4 | 2024-10-22 | 16:53 | martes | Banco RF–VLC (laboratorio) |
-
-> **Observación relevante para la discusión:** la sesión de los sótanos se hizo un **viernes a las 11:28 AM**, en plena hora de clases. Esto refuerza la narrativa de alto flujo humano en Sótano 1 (enfermería + ludoteca activas) frente a Sótano 2 (laboratorios con menos gente). Si se hubieran tomado en fin de semana o en horario nocturno, la varianza diferencial probablemente sería menor.
-
-### Tabla de escenarios
-
-| Ubicación | Nivel | Uso del espacio | Sesión | Movilidad / tráfico humano | Condición esperada del enlace RF |
-|---|---|---|---|---|---|
-| **Antena Yagi** | **Outdoor — zona al aire libre del Piso 4** (justo encima de los sótanos para permitir el cableado vertical hasta Sótano 2) | Captura de señal de referencia que alimenta el sistema híbrido | 3 | Estático, sin obstrucción humana, LoS al transmisor comercial | **Línea base outdoor** (alta SNR, baja varianza) |
-| **Piso 5** | Indoor — superior | Aulas / oficinas | 1 | Receptor estático en punto óptimo del piso | Atenuación moderada por techo y muros |
-| **Piso 4** | Indoor | Aulas (mismo nivel donde está la zona al aire libre con la Yagi outdoor; la medida indoor se hace **dentro del piso**, no afuera) | 1 | Receptor estático en punto óptimo del piso | Atenuación moderada |
-| **Piso 3** | Indoor | Aulas | 1 | Receptor estático en punto óptimo | Atenuación + multitrayecto |
-| **Piso 2** | Indoor | Aulas | 1 | Receptor estático en punto óptimo | Atenuación acumulada |
-| **Piso 1** | Indoor — bajo | Aulas / áreas comunes | 1 | Receptor estático en punto óptimo | Mayor atenuación por estructura sobre el piso |
-| **Sótano 1** | Subterráneo (–1) | **Enfermería + ludoteca** | 2 (vie 11:28 AM, hora pico) | **Alto y dinámico** — mayor flujo de personas en movimiento del edificio | Atenuación severa + **shadowing dinámico** por personas en movimiento ⇒ **alta varianza** |
-| **Sótano 2** | Subterráneo (–2) | Laboratorios | 2 (vie 11:36 AM) | Bajo (poca gente) | Atenuación máxima por profundidad estructural, **pero varianza menor** que Sótano 1 al haber poco movimiento |
-| **RF–VLC** | Laboratorio controlado | Banco de pruebas del sistema híbrido propuesto | 4 | Estático, condiciones controladas | Caso de validación del aporte de la arquitectura |
-
-### Implicación para la comparabilidad entre sesiones
-
-Las sesiones 3 y 4 (octubre) están separadas ~7 meses de la sesión 1 (marzo) y ~6 meses de la sesión 2 (abril). Para evitar que un evaluador atribuya las diferencias entre escenarios al **paso del tiempo** (variación atmosférica, posibles cambios en la potencia del transmisor comercial), conviene aclarar en el manuscrito que:
-
-1. La **frecuencia de referencia** (103.5 MHz, emisora comercial estable) se controla con la captura outdoor de la antena Yagi, que actúa como **ancla**.
-2. La comparación crítica del estudio (degradación piso a piso y entre sótanos) se hace dentro de la **misma sesión** (sesión 1 para pisos, sesión 2 para sótanos), por lo que las conclusiones de degradación intra-edificio no dependen de la ancla outdoor.
-3. La validación del sistema híbrido (sesión 4) se hace en condiciones de laboratorio independientes y se compara contra la línea base de la antena (sesión 3), ambas tomadas en el mismo periodo (octubre).
-
-### Alcance del estudio estadístico
-
-> **El análisis estadístico se restringe estrictamente a los 9 escenarios reportados en la Tabla 4.1 del manuscrito**: Antena Yagi (Piso 4 outdoor), Pisos 1–5, Sótanos 1 y 2, y banco RF–VLC. **No se incluyen** otras mediciones que pudieran existir en versiones previas del repositorio (p. ej. "Floor 6" o "Terrace 6" del 6º piso/terraza), ya que no forman parte del alcance experimental documentado en la tesis. El notebook [SNRDegradationStudy.ipynb](../SNR%20Degradation%20Study/SNRDegradationStudy.ipynb) carga exactamente estos 9 archivos.
-
----
-
-## Bloque 5 — Hallazgo clave: datos ↔ escenario (con valores reales de la Tabla 4.1)
-
-> **El Sótano 1 presenta una varianza ~290× superior al Sótano 2**, a pesar de que Sótano 2 es el nivel más profundo del edificio.
-
-### Valores reales medidos
-
-| Métrica | Antena | Piso 1 | Sótano 1 | Sótano 2 | RF–VLC |
-|---|---|---|---|---|---|
-| $\bar{x}$ (dB) | 29.14 | 25.07 | 11.50 | **4.93** ↓ | **36.90** ↑ |
-| $\tilde{x}$ (dB) | 28.98 | 24.98 | **8.56** | 4.93 | 36.81 |
-| $\sigma^2$ (dB²) | 0.45 | 2.44 | **34.77** | 0.12 | 0.23 |
-| $\sigma$ (dB) | 0.67 | 1.56 | **5.90** | 0.34 | 0.48 |
-| IQR (dB) | 1.09 | 1.99 | **3.94** | 0.57 | 0.53 |
-
-**Comparación clave Sótano 1 vs Sótano 2:**
-
-| Métrica | Sótano 1 | Sótano 2 | Ratio |
+| Scaler | Centro | Escala | Robustez a outliers |
 |---|---|---|---|
-| Varianza $\sigma^2$ | 34.77 dB² | 0.12 dB² | **~290×** |
-| Desv. estándar $\sigma$ | 5.90 dB | 0.34 dB | ~17× |
-| IQR | 3.94 dB | 0.57 dB | ~7× |
-| Asimetría ($\bar{x}-\tilde{x}$) | 2.94 dB | 0.00 dB | Sótano 1 fuertemente asimétrico |
+| `StandardScaler` | media $\bar{x}$ | $\sigma$ | **Baja** — un valor atípico desplaza media y desviación |
+| `MinMaxScaler` | mínimo $x_{\min}$ | $x_{\max} - x_{\min}$ | **Muy baja** — un único extremo deforma toda la escala |
+| **`RobustScaler`** | mediana $\tilde{x}$ | IQR | **Alta** — mediana e IQR son estadísticos robustos |
 
-### Explicación física
+> [!NOTE]
+> Un `StandardScaler` ajustado a estos datos quedaría dominado por la dispersión de Sótano 1 ($\sigma^2 \approx 35$ dB$^2$) y comprimiría los demás escenarios. `RobustScaler` evita ese sesgo y deja los escenarios estables (Antena, RF–VLC, Sótano 2) representados de forma comparable a los inestables.
 
-- **Sótano 1** alberga la **enfermería y la ludoteca** del campus, lo que lo convierte en el área con **mayor flujo de personas en movimiento** del edificio durante una jornada típica. El cuerpo humano es absorbente y dispersor en banda VHF (≈103.5 MHz, $\lambda\approx 2.9$ m), por lo que el tránsito constante introduce **shadowing dinámico** y multitrayecto variable que se manifiesta directamente en una **varianza extrema** (34.77 dB²) y en una marcada **asimetría** (la mediana 8.56 dB queda 2.94 dB por debajo de la media 11.5 dB, evidencia de una cola superior larga inducida por momentos de despejes momentáneos del LoS).
-- **Sótano 2**, aun siendo el nivel más bajo (mayor atenuación estructural por profundidad), está dedicado a **laboratorios** con baja ocupación: el canal es notablemente más estable temporalmente, lo que se refleja en una varianza prácticamente nula (0.12 dB²). Su SNR media es la más baja del edificio (4.93 dB), pero el canal es **predecible**.
+### 6.1 Test de normalidad: Shapiro–Wilk
 
-### Lectura formal (sugerida para el manuscrito, Cap. 4)
+| Hipótesis | Afirmación |
+|---|---|
+| $H_0$ | La muestra **proviene de una distribución normal** |
+| $H_1$ | La muestra **no proviene** de una distribución normal |
 
-> *"La varianza observada en el Sótano 1 ($\sigma^2 = 34.77$ dB$^2$, IQR $= 3.94$ dB) excede en aproximadamente **290 veces** la del Sótano 2 ($\sigma^2 = 0.12$ dB$^2$), escenario más profundo pero con menor tránsito de personas. La asimetría del Sótano 1 ($\bar{x}-\tilde{x}=2.94$ dB) refuerza esta lectura: existe una cola larga hacia valores altos de SNR que se atribuye a despejes momentáneos del trayecto cuando no hay personas interpuestas. Este resultado es coherente con un régimen de **shadowing dinámico inducido por la movilidad humana**, característico de espacios de uso clínico-recreativo (enfermería y ludoteca), y refuerza que el comportamiento del canal RF indoor a 103.5 MHz no se explica únicamente por la cota de profundidad o la atenuación estructural, sino también por la **dinámica de ocupación** del entorno. Esta observación se enmarca en el modelo de shadowing log-normal del canal RF descrito en la Sec. 2.4 y aporta evidencia empírica al análisis de sensibilidad solicitado por el evaluador 3 sin requerir una corrida experimental adicional."*
+El estadístico $W$ compara la varianza esperada bajo normalidad con la observada: $W \approx 1$ ⇒ datos normales; $W$ pequeño ⇒ no normales.
+
+> [!WARNING]
+> **Resultado obtenido:** $W \approx 0.928$, $p \approx 1.36 \times 10^{-28}$ → **se rechaza $H_0$**: la SNR del estudio **no sigue una distribución normal**.
+
+Esto es coherente con varias señales observadas:
+
+- La presencia de **outliers** en la Tabla 4.1 (columnas ↓/↑ Atípico no triviales en varios escenarios).
+- La **asimetría** entre media y mediana en escenarios clave: notablemente Sótano 1 con $\bar{x} = 11.50$ dB vs. $\tilde{x} = 8.56$ dB — una diferencia de casi 3 dB que indica una cola superior larga.
+- La presencia de **regímenes físicos heterogéneos** (outdoor con LoS limpio, indoor con multitrayecto, sótanos con shadowing dinámico inducido por personas en movimiento).
+
+> [!IMPORTANT]
+> **Implicación:** debemos comparar las ubicaciones con una prueba **no paramétrica** → Kruskal–Wallis.
+
+### 6.2 Test de comparación: Kruskal–Wallis
+
+| Hipótesis | Afirmación |
+|---|---|
+| $H_0$ | **Todas las medianas son iguales**: $\tilde{x}_1 = \tilde{x}_2 = \dots = \tilde{x}_9$ — la ubicación no tiene efecto sobre la SNR |
+| $H_1$ | **Al menos una mediana difiere** — la ubicación sí tiene un efecto medible |
+
+Kruskal–Wallis es la **alternativa no paramétrica al ANOVA de una vía**. Asigna *rangos* a todas las observaciones combinadas y mide la diferencia entre la suma de rangos por grupo y lo esperado bajo $H_0$. Bajo $H_0$, $H$ se distribuye aproximadamente como $\chi^2_{k-1}$ (con $k - 1 = 8$ grados de libertad).
+
+![Boxplot Kruskal-Wallis](Estudio_Estadistico/Study_images/kruskal_boxplot.png)
+
+> [!WARNING]
+> **Resultado obtenido:** $H \approx 1403.11$ (extremadamente alto frente al valor crítico $\chi^2_{8,\,0.05} \approx 15.51$) y $p \approx 1.20\times 10^{-297}$ → **se rechaza $H_0$ con altísima confianza**.
+
+> [!IMPORTANT]
+> **Implicación:** la ubicación **sí** tiene un efecto medible y cuantificable sobre la SNR. La degradación reportada en la tesis no es ruido aleatorio — es un fenómeno físico que el test confirma estadísticamente.
+
+> [!CAUTION]
+> **Limitación de Kruskal–Wallis:** la prueba indica que *al menos uno* de los grupos difiere, no cuáles. La inspección visual del violin plot y la lectura directa de la Tabla 4.1 lo comprueban: el contraste **Sótano 1 dinámico vs. Sótano 2 estable** y la jerarquía **Antena Yagi → Pisos → Sótanos → RF–VLC** son visualmente evidentes.
 
 ---
 
-## Bloque 6 — Dónde se propone pegar este contenido en el manuscrito
+## 7. Conclusión estadística
 
-Cinco ubicaciones complementarias (no excluyentes), alineadas con la nueva estructura de [new.md](new.md):
-
-| # | Archivo destino | Qué se agrega | Para qué sirve |
-|---|---|---|---|
-| 1 | **Cap. 3 — sección 3.2.1 "Escenarios indoor"** | Tabla del Bloque 4 (caracterización física) + texto narrativo del Bloque 5 | Responde E3 #4 directamente |
-| 2 | **Anexo nuevo "Métodos estadísticos"** (Tema 2 del consolidado) | Glosario completo (Bloque 1) + árbol de decisión y justificación (Bloque 2) + justificación del escalado (Bloque 3) | Responde E3 #4 ("anexo que explique los métodos") y E1 #4 |
-| 3 | **Cap. 4 — discusión** (responde a E3 #5) | Lectura formal del Bloque 5 (Sótano 1 vs. Sótano 2) | Da la "contundencia" que E3 reclama; aporta análisis de sensibilidad sin nueva experimentación |
-| 4 | **[RespuestaSIRVENalos3Evaluadores.md](RespuestaSIRVENalos3Evaluadores.md) — Tema 7** | Tabla del Bloque 4 como entregable | Cierra el punto en la respuesta consolidada |
-| 5 | **[SNRDegradationStudy.ipynb](../SNR%20Degradation%20Study/SNRDegradationStudy.ipynb)** (opcional) | Celda markdown nueva tras la tabla de estadísticas con el glosario del Bloque 1 + nota sobre `RobustScaler` y árbol de decisión | Hace el notebook autocontenido para el evaluador |
+| Pregunta | Respuesta basada en los tests |
+|---|---|
+| ¿Los datos son normales? | **No** — Shapiro–Wilk: $W = 0.928$, $p \ll 0.05$ → rechazamos normalidad. |
+| ¿Hay diferencias significativas entre ubicaciones? | **Sí** — Kruskal–Wallis: $H = 1403.11$, $p = 1.20\times 10^{-297}$ → rechazamos igualdad de medianas. |
+| ¿Qué prueba se eligió y por qué? | Kruskal–Wallis, porque tenemos $k>2$ grupos, los datos no son normales, las muestras no son pareadas. Camino validado por el árbol de Marusteri & Bacarea (2010). |
+| ¿Qué implica para la tesis? | La degradación SNR observada en la Tabla 4.1 es un **fenómeno estadísticamente significativo**, no aleatorio. Justifica empíricamente la motivación de proponer un sistema híbrido RF–VLC para mitigar la no-uniformidad indoor. |
 
 ---
 
-## Bloque 7 — Estado de los datos a confirmar
+## Reproducibilidad
 
-Para no inventar números al redactar la versión final del manuscrito:
+> [!TIP]
+> Todos los bloques de código Python (carga de datos, generación de figuras, pruebas estadísticas) están en [Estudio_Estadistico/README.md](Estudio_Estadistico/README.md) listos para pegar en celdas de Jupyter/Colab, y en el notebook [Estudio_Estadistico/SNRDegradationStudy.ipynb](Estudio_Estadistico/SNRDegradationStudy.ipynb) ya ejecutables. Los datos se leen directamente desde GitHub mediante URLs `raw`, por lo que **no requiere clonar el repositorio**.
 
-1. ~~**Sótano 1 vs Sótano 2 — valores de varianza/IQR**.~~ ✅ Resueltos: Sótano 1 $\sigma^2=34.77$, IQR=3.94; Sótano 2 $\sigma^2=0.12$, IQR=0.57 (Tabla 4.1).
-2. ~~**Antena outdoor**: ¿estaba en azotea/terraza, o cerca de una ventana?~~ ✅ Resuelto: **Antena Yagi al aire libre desde el Piso 4**, apuntada al transmisor. La señal capturada alimenta el sistema híbrido propuesto.
-3. ~~**Movilidad del Rx en cada piso**~~. ✅ Resuelto: **estático en el punto óptimo** de cada nivel (selección manual previa de la mejor recepción, luego receptor fijo durante los ~22 s de adquisición).
-4. ~~**Hora del día / día de la semana** de la sesión en Sótano 1~~. ✅ Resuelto a partir de los timestamps de los CSV: **Sótanos = viernes 5-Abr-2024, 11:28 AM** (hora pico de clases) → refuerza la narrativa de tráfico humano. Pisos = viernes 22-Mar-2024 PM. Antena = martes 8-Oct-2024. RF–VLC = martes 22-Oct-2024 PM.
-5. **Iluminación ambiente** en sótanos. 🟡 **Pendiente**: Juan tomará las medidas con luxómetro **esta semana** (relevante para E3 #5 si se discute interferencia de luminarias en el caso RF–VLC).
+Para una justificación metodológica más extensa (caracterización física por escenario, cronograma de adquisición, análisis del shadowing dinámico en Sótano 1 vs Sótano 2, propuesta de migración al manuscrito), ver [DetallesEstadisticos.md](DetallesEstadisticos.md).
 
 ---
 
-## Referencias citadas en este documento
+## Referencias
 
-- **Marusteri, M., & Bacarea, V. (2010).** Comparing groups for statistical differences: how to choose the right statistical test? *Biochemia Medica*, 20(1), 15–32. [Marusteri_M_Comparing_groups_for_statistical_differences.pdf](Marusteri_M_Comparing_groups_for_statistical_differences.pdf).
+- **Marusteri, M., & Bacarea, V. (2010).** Comparing groups for statistical differences: how to choose the right statistical test? *Biochemia Medica*, 20(1), 15–32.
 - **Pedregosa, F. et al. (2011).** Scikit-learn: Machine Learning in Python. *JMLR*, 12, 2825–2830 (sección sobre `RobustScaler`).
 - **Shapiro, S. S., & Wilk, M. B. (1965).** An analysis of variance test for normality (complete samples). *Biometrika*, 52(3/4), 591–611.
-- **Kruskal, W. H., & Wallis, W. A. (1952).** Use of ranks in one-criterion variance analysis. *JASA*, 47(260), 583–621.
-
----
-
-## Próximos pasos sugeridos
-
-1. **Decidir con Juan** las 4 aclaraciones pendientes del Bloque 7.
-2. **Migrar contenido** a las cinco ubicaciones del Bloque 6 (Cap. 3, Cap. 4, Anexo, respuesta consolidada y notebook) en Overleaf.
-3. **Actualizar [Avance.md](Avance.md)** marcando los temas E3 #4, E3 #5, E1 #4 y E2 #2 como 🟡 en progreso.
-4. **Citar Marusteri & Bacarea (2010) y Pedregosa et al. (2011)** en `references.bib` si aún no están.
+- **Kruskal, W. H., & Wallis, W. A. (1952).** Use of ranks in one-criterion variance analysis. *Journal of the American Statistical Association (JASA)*, 47(260), 583–621.
+- **Tukey, J. W. (1977).** *Exploratory Data Analysis.* Addison-Wesley.
